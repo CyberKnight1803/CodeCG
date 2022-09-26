@@ -1,0 +1,8 @@
+# BT
+**/.DS_Store
+**/__pycache__
+
+# Data 
+data/
+models/
+runs/
