@@ -12,8 +12,10 @@ PATH_CHECKPOINT_MODELS = os.environ.get("PATH_CHECKPOINT_MODELS", "./models")
 
 
 # Hyperparams 
+TOKENIZER_MODEL = "Salesforce/codet5-base"
 NL_ENCODER_BASE_MODEL = "roberta-base"
 NL_DECODER_BASE_MODEL = "gpt2"
+VOCAB_SIZE = 32100
 
 MAX_SEQUENCE_LENGTH = 128
 PADDING = "max_length"

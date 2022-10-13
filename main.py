@@ -1,9 +1,9 @@
 import argparse
-from json import decoder
 
 import pytorch_lightning as pl 
 from pytorch_lightning.utilities.seed import seed_everything
 from pytorch_lightning.loggers import WandbLogger, TensorBoardLogger
+
 from config import (
     AVAIL_GPUS,
     BATCH_SIZE,
@@ -16,6 +16,7 @@ from config import (
     NUM_WORKERS,
     PADDING,
     PL,
+    TOKENIZER_MODEL,
     WEIGHT_DECAY
 )
 
@@ -25,8 +26,7 @@ def main(args):
     seed_everything(42)
     
     dm = NL2NLDM(
-        encoder_base_model=args.nl_en_model, 
-        decoder_base_model=args.nl_de_model, 
+        tokenizer_model=args.tokenizer,
         pl=args.pl, 
         max_seq_len=args.max_seq_len, 
         padding=args.padding, 
@@ -49,6 +49,7 @@ if __name__=="__main__":
     parser.add_argument("--wd", type=float, default=WEIGHT_DECAY, help="Set weight decay")
     parser.add_argument("--dropout", type=float, default=DROPOUT_RATE, help="Set dropout rate")
 
+    parser.add_argument("--tokenizer", type=str, default=TOKENIZER_MODEL, help="Set Tokenizer")
     parser.add_argument("--nl_en_model", type=str, default=NL_ENCODER_BASE_MODEL, help="Set NL encoder base model")
     parser.add_argument("--nl_de_model", type=str, default=NL_DECODER_BASE_MODEL, help="Set NL decoder base model")
     parser.add_argument("--max_seq_len", type=int, default=MAX_SEQUENCE_LENGTH, help="Set max length of a sequence")
