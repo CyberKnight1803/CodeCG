@@ -19,6 +19,7 @@ from config import (
     NL_DECODER_BASE_MODEL,
     PATH_CACHE_DATASETS,
     PL,
+    TOKENIZER_MODEL,
 )
 
 class NL2NLDM(pl.LightningDataModule):
@@ -32,8 +33,7 @@ class NL2NLDM(pl.LightningDataModule):
 
     def __init__(
         self,
-        encoder_base_model: str = NL_ENCODER_BASE_MODEL,
-        decoder_base_model: str = NL_DECODER_BASE_MODEL,
+        tokenizer_model: str = TOKENIZER_MODEL,
         pl: str = PL,
         max_seq_len: int = MAX_SEQUENCE_LENGTH,
         padding: str = PADDING,
@@ -43,24 +43,17 @@ class NL2NLDM(pl.LightningDataModule):
 
         super().__init__() 
 
-        self.encoder_base_model = encoder_base_model 
-        self.decoder_base_model = decoder_base_model
+        self.tokenizer_model = tokenizer_model
         self.pl = pl 
         self.max_seq_len = max_seq_len
         self.padding = padding
         self.batch_size = batch_size
         self.num_workers = num_workers
 
-        self.encoder_tokenizer = AutoTokenizer.from_pretrained(
-            pretrained_model_name_or_path=self.encoder_base_model,
-            cache_dir=PATH_BASE_MODELS,
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            pretrained_model_name_or_path=self.tokenizer_model, 
             use_fast=True,
-        )
-
-        self.decoder_tokenizer = AutoTokenizer.from_pretrained(
-            pretrained_model_name_or_path=self.decoder_base_model,
             cache_dir=PATH_BASE_MODELS,
-            use_fast=True
         )
 
 
@@ -103,18 +96,15 @@ class NL2NLDM(pl.LightningDataModule):
         )
     
     def _to_features(self, batch, indices=None):
-        self.encoder_tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-
-        features = self.encoder_tokenizer(
+        
+        features = self.tokenizer(
             text=batch['docstring'],
             max_length=self.max_seq_len,
             padding=self.padding,
             truncation=True,
         ) 
 
-        self.decoder_tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-
-        targets = self.decoder_tokenizer(
+        targets = self.tokenizer(
             text=batch['docstring'], 
             max_length=self.max_seq_len,
             padding=self.padding,
@@ -124,4 +114,5 @@ class NL2NLDM(pl.LightningDataModule):
         features['target_input_ids'] = targets['input_ids']
         features['target_attention_mask'] = targets['attention_mask']
 
+        features['labels'] = features['target_input_ids']
         return features 
