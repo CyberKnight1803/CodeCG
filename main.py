@@ -1,5 +1,4 @@
 import argparse
-from json import decoder, encoder
 
 import pytorch_lightning as pl 
 from pytorch_lightning.utilities.seed import seed_everything
@@ -16,8 +15,11 @@ from config import (
     NL_ENCODER_BASE_MODEL,
     NUM_WORKERS,
     PADDING,
+    PATH_BASE_MODELS,
+    PATH_CACHE_DATASETS,
     PATH_LOGS,
     PL,
+    PROJECT_NAME,
     TOKENIZER_MODEL,
     WEIGHT_DECAY
 )
@@ -46,6 +48,8 @@ def NL2NLRun(args):
     dm = NL2NLDM(
         tokenizer_model=args.tokenizer,
         pl=args.pl,
+        path_base_models=args.path_base_models,
+        path_cache_dataset=args.path_cache_datasets,
         max_seq_len=args.max_seq_len,
         padding=args.padding,
         batch_size=args.batch_size,
@@ -63,6 +67,15 @@ def NL2NLRun(args):
         save_dir=args.path_logs,
         run_name=args.run_name,
     )
+
+    if args.logger == "wandb":
+        logger = WandbLogger(
+            save_dir=args.path_logs,
+            name=args.run_name,
+            id=args.run_name,
+            project=PROJECT_NAME
+        )
+
 
     trainer = pl.Trainer(
         logger=logger,
@@ -94,11 +107,15 @@ if __name__=="__main__":
     parser.add_argument("--padding", type=str, default=PADDING, help="Set padding type")
     
     parser.add_argument("--pl", type=str, default=PL, help="Set programming language")
+    parser.add_argument("--logger", type=str, default="tensorboard", help="Set logger")
 
     parser.add_argument("--gpus", type=int, default=AVAIL_GPUS, help="Set no. of GPUs")
     parser.add_argument("--workers", type=int, default=NUM_WORKERS, help="Set no. of CPU Threads")
 
     parser.add_argument("--path_logs", type=str, default=PATH_LOGS, help="Set path to log runs")
+    parser.add_argument("--path_base_models", type=str, default=PATH_BASE_MODELS, help="Set path to save base pretrained models")
+    parser.add_argument("--path_cache_datasets", type=str, default=PATH_CACHE_DATASETS, help="Set path to cache datasets")
+
     parser.add_argument("--run_name", type=str, required=True, help="Set exp run name")
 
     args = parser.parse_args()

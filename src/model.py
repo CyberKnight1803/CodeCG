@@ -1,4 +1,3 @@
-from turtle import forward
 from typing import Optional
 import torch 
 import torch.nn as nn 
@@ -55,7 +54,7 @@ class NLEncoder(nn.Module):
     def __init__(
         self, 
         model_name_or_path: str = NL_ENCODER_BASE_MODEL, 
-        vocab_size: int = VOCAB_SIZE
+        vocab_size: int = VOCAB_SIZE,
     ) -> None:
 
         super().__init__()
@@ -128,7 +127,7 @@ class NL2NL(pl.LightningModule):
             input_ids=input_ids,
             attention_mask=attention_mask
         ) 
-        encoder_hidden_states = encoder_outs.last_hidden_states 
+        encoder_hidden_states = encoder_outs.last_hidden_state
 
         decoder_outs = self.decoder(
             input_ids=target_input_ids,
@@ -137,7 +136,7 @@ class NL2NL(pl.LightningModule):
             encoder_attention_mask=attention_mask,
         )
 
-        lm_outs = self.lm_head(decoder_outs.last_hidden_states)
+        lm_outs = self.lm_head(decoder_outs.last_hidden_state)
         return lm_outs 
 
     def training_step(self, batch, batch_idx) -> STEP_OUTPUT:

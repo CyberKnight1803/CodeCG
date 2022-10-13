@@ -15,8 +15,6 @@ from config import (
     NUM_WORKERS,
     PADDING,
     PATH_BASE_MODELS,
-    NL_ENCODER_BASE_MODEL,
-    NL_DECODER_BASE_MODEL,
     PATH_CACHE_DATASETS,
     PL,
     TOKENIZER_MODEL,
@@ -28,13 +26,16 @@ class NL2NLDM(pl.LightningDataModule):
         "input_ids", 
         "attention_mask", 
         "target_input_ids", 
-        "target_attention_mask"
+        "target_attention_mask",
+        "labels"
     ]
 
     def __init__(
         self,
         tokenizer_model: str = TOKENIZER_MODEL,
         pl: str = PL,
+        path_base_models: str = PATH_BASE_MODELS,
+        path_cache_dataset: str = PATH_CACHE_DATASETS,
         max_seq_len: int = MAX_SEQUENCE_LENGTH,
         padding: str = PADDING,
         batch_size: int = BATCH_SIZE,
@@ -48,15 +49,15 @@ class NL2NLDM(pl.LightningDataModule):
         self.tokenizer = AutoTokenizer.from_pretrained(
             pretrained_model_name_or_path=tokenizer_model, 
             use_fast=True,
-            cache_dir=PATH_BASE_MODELS,
+            cache_dir=self.hparams.path_base_models,
         )
 
 
     def prepare_data(self) -> None:
-        ds.load_dataset(DATASET_NAME, self.hparams.pl, cache_dir=PATH_CACHE_DATASETS)
+        ds.load_dataset(DATASET_NAME, self.hparams.pl, cache_dir=self.hparams.path_cache_dataset)
     
     def setup(self, stage: Optional[str] = None) -> None:
-        self.dataset = ds.load_dataset(DATASET_NAME, self.hparams.pl, cache_dir=PATH_CACHE_DATASETS)
+        self.dataset = ds.load_dataset(DATASET_NAME, self.hparams.pl, cache_dir=self.hparams.path_cache_dataset)
         
         
         for split in self.dataset.keys():
