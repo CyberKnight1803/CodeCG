@@ -31,7 +31,7 @@ class LMHead(nn.Module):
         super().__init__()
 
         self.dense = nn.Linear(config.hidden_size, config.hidden_size)
-        self.layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+        self.layer_norm = nn.LayerNorm(config.hidden_size)
 
         self.decoder = nn.Linear(config.hidden_size, config.vocab_size)
         self.bias = nn.Parameter(torch.zeros(config.vocab_size))   
@@ -59,10 +59,11 @@ class NLEncoder(nn.Module):
     ) -> None:
 
         super().__init__()
-        if model_name_or_path.lower() == "roberta":
+        if model_name_or_path.lower() == "roberta-base":
             self.config = RobertaConfig()
+            self.config.vocab_size = vocab_size
         
-        self.config.vocab_size = vocab_size
+        
         self.model = AutoModel.from_config(self.config)
     
     def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor):
@@ -172,7 +173,7 @@ class NL2NL(pl.LightningModule):
         )
 
 
-        self.log('loss/train', loss)
+        self.log('loss/val', loss)
     
     def test_step(self, batch, batch_idx) -> Optional[STEP_OUTPUT]:
         outs = self(
@@ -188,7 +189,7 @@ class NL2NL(pl.LightningModule):
         )
 
 
-        self.log('loss/train', loss) 
+        self.log('loss/test', loss) 
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(

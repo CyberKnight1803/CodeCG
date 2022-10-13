@@ -3,7 +3,7 @@ import torch
 
 
 # Paths 
-PATH_EXPERIMENT = os.environ.get("PATH_EXPERIMENTS", "./runs")
+PATH_LOGS = os.environ.get("PATH_LOGS", "./runs")
 
 PATH_BASE_MODELS = os.environ.get("PATH_BASE_MODELS", "./base_models")
 PATH_CACHE_DATASETS = os.environ.get("PATH_CACHE_DATASETS", "./data/cache")

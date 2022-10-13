@@ -43,33 +43,28 @@ class NL2NLDM(pl.LightningDataModule):
 
         super().__init__() 
 
-        self.tokenizer_model = tokenizer_model
-        self.pl = pl 
-        self.max_seq_len = max_seq_len
-        self.padding = padding
-        self.batch_size = batch_size
-        self.num_workers = num_workers
+        self.save_hyperparameters(logger=False)
 
         self.tokenizer = AutoTokenizer.from_pretrained(
-            pretrained_model_name_or_path=self.tokenizer_model, 
+            pretrained_model_name_or_path=tokenizer_model, 
             use_fast=True,
             cache_dir=PATH_BASE_MODELS,
         )
 
 
     def prepare_data(self) -> None:
-        ds.load_dataset(DATASET_NAME, self.pl, cache_dir=PATH_CACHE_DATASETS)
+        ds.load_dataset(DATASET_NAME, self.hparams.pl, cache_dir=PATH_CACHE_DATASETS)
     
     def setup(self, stage: Optional[str] = None) -> None:
-        self.dataset = ds.load_dataset(DATASET_NAME, self.pl, cache_dir=PATH_CACHE_DATASETS)
+        self.dataset = ds.load_dataset(DATASET_NAME, self.hparams.pl, cache_dir=PATH_CACHE_DATASETS)
         
         
         for split in self.dataset.keys():
             self.dataset[split] = self.dataset[split].map(
                 self._to_features,
                 batched=True,
-                batch_size=self.batch_size,
-                num_proc=self.num_workers,
+                batch_size=self.hparams.batch_size,
+                num_proc=self.hparams.num_workers,
             )
 
             self.columns = [
@@ -82,32 +77,39 @@ class NL2NLDM(pl.LightningDataModule):
     def train_dataloader(self) -> TRAIN_DATALOADERS:
         return DataLoader(
             dataset=self.dataset['train'], 
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
+            batch_size=self.hparams.batch_size,
+            num_workers=self.hparams.num_workers,
             drop_last=True,
         )
     
     def val_dataloader(self) -> EVAL_DATALOADERS:
         return DataLoader(
             dataset=self.dataset['validation'], 
-            batch_size=self.batch_size,
-            num_workers=self.num_workers,
-            drop_last=True,
+            batch_size=self.hparams.batch_size,
+            num_workers=self.hparams.num_workers,
+            drop_last=True
         )
     
+    def test_dataloader(self) -> EVAL_DATALOADERS:
+        return DataLoader(
+            dataset=self.dataset['test'], 
+            batch_size=self.hparams.batch_size,
+            num_workers=self.hparams.num_workers,
+        )
+
     def _to_features(self, batch, indices=None):
         
         features = self.tokenizer(
             text=batch['docstring'],
-            max_length=self.max_seq_len,
-            padding=self.padding,
+            max_length=self.hparams.max_seq_len,
+            padding=self.hparams.padding,
             truncation=True,
         ) 
 
         targets = self.tokenizer(
             text=batch['docstring'], 
-            max_length=self.max_seq_len,
-            padding=self.padding,
+            max_length=self.hparams.max_seq_len,
+            padding=self.hparams.padding,
             truncation=True,
         )
 
