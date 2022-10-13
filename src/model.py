@@ -6,6 +6,8 @@ import torch.nn.functional as F
 import pytorch_lightning as pl 
 from pytorch_lightning.utilities.types import STEP_OUTPUT
 
+from torchmetrics.functional import accuracy
+
 from transformers import (
     AutoModel,
     GPT2Config,
@@ -152,8 +154,12 @@ class NL2NL(pl.LightningModule):
             batch['labels'].view(-1)
         )
 
+        probs = F.softmax(outs, dim=-1)
+        preds = probs.view(-1, self.decoder.config.vocab_size).argmax(dim=-1)
+        acc = accuracy(preds=preds.view(-1), target=batch['labels'].view(-1))
 
         self.log('loss/train', loss)
+        self.log('acc/train', acc)
 
         return loss 
 
@@ -172,7 +178,12 @@ class NL2NL(pl.LightningModule):
         )
 
 
+        probs = F.softmax(outs, dim=-1)
+        preds = probs.view(-1, self.decoder.config.vocab_size).argmax(dim=-1)
+        acc = accuracy(preds=preds.view(-1), target=batch['labels'].view(-1))
+
         self.log('loss/val', loss)
+        self.log('acc/val', acc)
     
     def test_step(self, batch, batch_idx) -> Optional[STEP_OUTPUT]:
         outs = self(
@@ -188,7 +199,12 @@ class NL2NL(pl.LightningModule):
         )
 
 
-        self.log('loss/test', loss) 
+        probs = F.softmax(outs, dim=-1)
+        preds = probs.view(-1, self.decoder.config.vocab_size).argmax(dim=-1)
+        acc = accuracy(preds=preds.view(-1), target=batch['labels'].view(-1))
+
+        self.log('loss/test', loss)
+        self.log('acc/test', acc) 
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
