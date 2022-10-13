@@ -1,4 +1,5 @@
 import argparse
+from json import decoder, encoder
 
 import pytorch_lightning as pl 
 from pytorch_lightning.utilities.seed import seed_everything
@@ -15,14 +16,16 @@ from config import (
     NL_ENCODER_BASE_MODEL,
     NUM_WORKERS,
     PADDING,
+    PATH_LOGS,
     PL,
     TOKENIZER_MODEL,
     WEIGHT_DECAY
 )
 
 from src.datamodule import NL2NLDM
+from src.model import NL2NL
 
-def main(args):
+def test_dm(args):
     seed_everything(42)
     
     dm = NL2NLDM(
@@ -37,6 +40,41 @@ def main(args):
     dm.setup()
 
     print(next(iter(dm.train_dataloader())))
+
+
+def NL2NLRun(args):
+    dm = NL2NLDM(
+        tokenizer_model=args.tokenizer,
+        pl=args.pl,
+        max_seq_len=args.max_seq_len,
+        padding=args.padding,
+        batch_size=args.batch_size,
+        num_workers=args.workers,
+    )
+
+    model = NL2NL(
+        encoder_model=args.nl_en_model,
+        decoder_model=args.nl_de_model,
+        learning_rate=args.lr,
+        weight_decay=args.wd,
+    )
+
+    logger = TensorBoardLogger(
+        save_dir=args.path_logs,
+        run_name=args.run_name,
+    )
+
+    trainer = pl.Trainer(
+        logger=logger,
+        accelerator="gpu", 
+        devices=args.gpus,   
+        max_epochs=args.epochs,
+        log_every_n_steps=2,
+        deterministic=True           # Hopefully get same results on different GPUs
+    )
+
+    trainer.fit(model, datamodule=dm)
+
 
 if __name__=="__main__":
 
@@ -60,9 +98,11 @@ if __name__=="__main__":
     parser.add_argument("--gpus", type=int, default=AVAIL_GPUS, help="Set no. of GPUs")
     parser.add_argument("--workers", type=int, default=NUM_WORKERS, help="Set no. of CPU Threads")
 
-    
+    parser.add_argument("--path_logs", type=str, default=PATH_LOGS, help="Set path to log runs")
+    parser.add_argument("--run_name", type=str, required=True, help="Set exp run name")
 
     args = parser.parse_args()
 
-    main(args)
+    # test_dm(args)
+    NL2NLRun(args)
 
