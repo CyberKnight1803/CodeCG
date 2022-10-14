@@ -10,8 +10,12 @@ PATH_CACHE_DATASETS = os.environ.get("PATH_CACHE_DATASETS", "./data/cache")
 
 PATH_CHECKPOINT_MODELS = os.environ.get("PATH_CHECKPOINT_MODELS", "./models")
 
+PATH_SAVE_NL_ENCODER = os.environ.get("PATH_SAVE_NL_ENCODER", "./models/codecg-nl-encoder")
+PATH_SAVE_NL_DECODER = os.environ.get("PATH_SAVE_NL_DECODER", "./models/codecg-nl-decoder")
 
 # Hyperparams 
+GLOBAL_SEED = 42 
+
 TOKENIZER_MODEL = "Salesforce/codet5-base"
 NL_ENCODER_BASE_MODEL = "roberta-base"
 NL_DECODER_BASE_MODEL = "gpt2"

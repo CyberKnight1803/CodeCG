@@ -18,8 +18,9 @@ from transformers import (
 from config import (
     LEARNING_RATE,
     NL_DECODER_BASE_MODEL,
-    NL_ENCODER_BASE_MODEL, 
-    PATH_BASE_MODELS, 
+    NL_ENCODER_BASE_MODEL,
+    PATH_SAVE_NL_DECODER,
+    PATH_SAVE_NL_ENCODER, 
     VOCAB_SIZE,
     WEIGHT_DECAY
 )
@@ -74,6 +75,17 @@ class NLEncoder(nn.Module):
             output_hidden_states=True
         )
 
+    def freeze(self):
+        """
+            Freeze Encoder Params for inference
+        """
+
+        for p in self.parameters():
+            p.requires_grad = False 
+    
+    def save(self, path:str = PATH_SAVE_NL_ENCODER):
+        self.model.save_pretrained(path)
+        return path 
 
 class NLDecoder(nn.Module):
     """
@@ -101,8 +113,18 @@ class NLDecoder(nn.Module):
             encoder_hidden_states=encoder_hidden_states,
             encoder_attention_mask=encoder_attention_mask
         )
+    
+    def freeze(self):
+        """ 
+            Freeze all weights for inference
+        """
 
-
+        for p in self.parameters():
+            p.requires_grad = False 
+    
+    def save(self, path: str = PATH_SAVE_NL_DECODER):
+        self.model.save_pretrained(path)
+        return path 
 class NL2NL(pl.LightningModule):
     def __init__(
         self, 
@@ -214,22 +236,9 @@ class NL2NL(pl.LightningModule):
         )
 
         return optimizer 
-class PLEncoder(nn.Module):
-    """
-        PL Encoder
-    """
 
-    pass 
+    def save(self, encoder_path: str = PATH_SAVE_NL_ENCODER, decoder_path: str = PATH_SAVE_NL_DECODER):
+        self.encoder.save(encoder_path)
+        self.decoder.save(decoder_path)
 
-class PL2NLGenerator(nn.Module):
-    """
-        PL2NL Generator
-    """
-    
-    pass 
-
-class PL2NLDescriminator(nn.Module):
-    pass 
-
-class PL2NL(pl.LightningModule):
-    pass 
+        return encoder_path, decoder_path
