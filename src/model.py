@@ -63,7 +63,7 @@ class NLEncoder(nn.Module):
         super().__init__()
         if model_name_or_path.lower() == "roberta-base":
             self.config = RobertaConfig()
-            self.config.vocab_size = vocab_size
+            self.config.vocab_size = vocab_size                # Making vocab size to that of CodeT5 since we are using CodeT5 tokenizer
         
         
         self.model = AutoModel.from_config(self.config)
@@ -102,7 +102,7 @@ class NLDecoder(nn.Module):
         if model_name_or_path.lower() == "gpt2":
             self.config = GPT2Config()
             self.config.add_cross_attention = True           # Setting this as decoder
-            self.config.vocab_size = vocab_size 
+            self.config.vocab_size = vocab_size              # Making vocab size to that of CodeT5 since we are using CodeT5 tokenizer
 
         self.model = AutoModel.from_config(self.config)
     
@@ -125,6 +125,8 @@ class NLDecoder(nn.Module):
     def save(self, path: str = PATH_SAVE_NL_DECODER):
         self.model.save_pretrained(path)
         return path 
+
+        
 class NL2NL(pl.LightningModule):
     def __init__(
         self, 
@@ -199,7 +201,7 @@ class NL2NL(pl.LightningModule):
             batch['labels'].view(-1)
         )
 
-
+        # Calculating token distribution to compute accuracy
         probs = F.softmax(outs, dim=-1)
         preds = probs.view(-1, self.decoder.config.vocab_size).argmax(dim=-1)
         acc = accuracy(preds=preds.view(-1), target=batch['labels'].view(-1))

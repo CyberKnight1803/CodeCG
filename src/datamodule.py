@@ -44,7 +44,7 @@ class NL2NLDM(pl.LightningDataModule):
 
         super().__init__() 
 
-        self.save_hyperparameters(logger=False)
+        self.save_hyperparameters(logger=False)            # Can access __init__ params using self.hparams
 
         self.tokenizer = AutoTokenizer.from_pretrained(
             pretrained_model_name_or_path=tokenizer_model, 
@@ -114,6 +114,8 @@ class NL2NLDM(pl.LightningDataModule):
             truncation=True,
         )
 
+        # Goal: D(E(x)) = x => our targets are nothing but our inputs
+        
         features['target_input_ids'] = targets['input_ids']
         features['target_attention_mask'] = targets['attention_mask']
 
