@@ -1,8 +1,6 @@
 import argparse
 
-import pytorch_lightning as pl 
-from pytorch_lightning.utilities.seed import seed_everything
-from pytorch_lightning.loggers import WandbLogger, TensorBoardLogger
+from trainer import train_nl2nl
 
 from config import (
     AVAIL_GPUS,
@@ -18,75 +16,12 @@ from config import (
     PATH_BASE_MODELS,
     PATH_CACHE_DATASETS,
     PATH_LOGS,
+    PATH_SAVE_NL_DECODER,
+    PATH_SAVE_NL_ENCODER,
     PL,
-    PROJECT_NAME,
     TOKENIZER_MODEL,
     WEIGHT_DECAY
 )
-
-from src.datamodule import NL2NLDM
-from src.model import NL2NL
-
-def test_dm(args):
-    seed_everything(42)
-    
-    dm = NL2NLDM(
-        tokenizer_model=args.tokenizer,
-        pl=args.pl, 
-        max_seq_len=args.max_seq_len, 
-        padding=args.padding, 
-        batch_size=args.batch_size,
-        num_workers=args.workers,
-    )
-
-    dm.setup()
-
-    print(next(iter(dm.train_dataloader())))
-
-
-def NL2NLRun(args):
-    dm = NL2NLDM(
-        tokenizer_model=args.tokenizer,
-        pl=args.pl,
-        path_base_models=args.path_base_models,
-        path_cache_dataset=args.path_cache_datasets,
-        max_seq_len=args.max_seq_len,
-        padding=args.padding,
-        batch_size=args.batch_size,
-        num_workers=args.workers,
-    )
-
-    model = NL2NL(
-        encoder_model=args.nl_en_model,
-        decoder_model=args.nl_de_model,
-        learning_rate=args.lr,
-        weight_decay=args.wd,
-    )
-
-    logger = TensorBoardLogger(
-        save_dir=args.path_logs,
-        run_name=args.run_name,
-    )
-
-    if args.logger == "wandb":
-        logger = WandbLogger(
-            save_dir=args.path_logs,
-            name=args.run_name,
-            id=args.run_name,
-            project=PROJECT_NAME
-        )
-
-
-    trainer = pl.Trainer(
-        logger=logger,
-        accelerator="gpu", 
-        devices=args.gpus,   
-        max_epochs=args.epochs,
-        log_every_n_steps=2,
-        deterministic=True           # Hopefully get same results on different GPUs
-    )
-
-    trainer.fit(model, datamodule=dm)
 
 
 if __name__=="__main__":
@@ -115,11 +50,13 @@ if __name__=="__main__":
     parser.add_argument("--path_logs", type=str, default=PATH_LOGS, help="Set path to log runs")
     parser.add_argument("--path_base_models", type=str, default=PATH_BASE_MODELS, help="Set path to save base pretrained models")
     parser.add_argument("--path_cache_datasets", type=str, default=PATH_CACHE_DATASETS, help="Set path to cache datasets")
+    parser.add_argument("--path_save_nl_encoder", type=str, default=PATH_SAVE_NL_ENCODER, help="Set path to save trained NL encoder")
+    parser.add_argument("--path_save_nl_decoder", type=str, default=PATH_SAVE_NL_DECODER, help="Set path to save NL decoder")
 
     parser.add_argument("--run_name", type=str, required=True, help="Set exp run name")
 
     args = parser.parse_args()
 
     # test_dm(args)
-    NL2NLRun(args)
+    train_nl2nl(args)
 
