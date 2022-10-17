@@ -54,6 +54,7 @@ if __name__=="__main__":
     parser.add_argument("--path_save_nl_decoder", type=str, default=PATH_SAVE_NL_DECODER, help="Set path to save NL decoder")
 
     parser.add_argument("--run_name", type=str, required=True, help="Set exp run name")
+    parser.add_argument("--jobid", type=str, help="Set Job ID when running on HPC")
 
     args = parser.parse_args()
 

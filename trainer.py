@@ -44,6 +44,8 @@ def train_nl2nl(args):
             project=PROJECT_NAME
         )
 
+        logger.log_hyperparams({"jobid": args.jobid})        # Logging jobid of HPC
+
 
     trainer = pl.Trainer(
         logger=logger,
