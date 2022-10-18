@@ -18,6 +18,7 @@ from config import (
     PATH_LOGS,
     PATH_SAVE_NL_DECODER,
     PATH_SAVE_NL_ENCODER,
+    PATH_SAVE_NL_LM,
     PL,
     TOKENIZER_MODEL,
     WEIGHT_DECAY
@@ -32,6 +33,9 @@ if __name__=="__main__":
     parser.add_argument("--batch_size", type=int, default=BATCH_SIZE, help="Set batch size")
 
     parser.add_argument("--lr", type=float, default=LEARNING_RATE, help="Set learning rate")
+    parser.add_argument("--g_lr", type=float, default=LEARNING_RATE, help="Set generator learning rate")
+    parser.add_argument("--d_lr", type=float, default=LEARNING_RATE, help="Set discriminator learning rate")
+
     parser.add_argument("--wd", type=float, default=WEIGHT_DECAY, help="Set weight decay")
     parser.add_argument("--dropout", type=float, default=DROPOUT_RATE, help="Set dropout rate")
 
@@ -52,6 +56,7 @@ if __name__=="__main__":
     parser.add_argument("--path_cache_datasets", type=str, default=PATH_CACHE_DATASETS, help="Set path to cache datasets")
     parser.add_argument("--path_save_nl_encoder", type=str, default=PATH_SAVE_NL_ENCODER, help="Set path to save trained NL encoder")
     parser.add_argument("--path_save_nl_decoder", type=str, default=PATH_SAVE_NL_DECODER, help="Set path to save NL decoder")
+    parser.add_argument("--path_save_nl_lm", type=str, default=PATH_SAVE_NL_LM, help="Set path to save lm head")
 
     parser.add_argument("--run_name", type=str, required=True, help="Set exp run name")
     parser.add_argument("--jobid", type=str, help="Set Job ID when running on HPC")

@@ -12,6 +12,7 @@ PATH_CHECKPOINT_MODELS = os.environ.get("PATH_CHECKPOINT_MODELS", "./models")
 
 PATH_SAVE_NL_ENCODER = os.environ.get("PATH_SAVE_NL_ENCODER", "./models/codecg-nl-encoder")
 PATH_SAVE_NL_DECODER = os.environ.get("PATH_SAVE_NL_DECODER", "./models/codecg-nl-decoder")
+PATH_SAVE_NL_LM = os.environ.get("PATH_SAVE_NL_LM", "./models/code-cg-nl-lm/lm.pt")
 
 # Hyperparams 
 GLOBAL_SEED = 42 
@@ -19,6 +20,8 @@ GLOBAL_SEED = 42
 TOKENIZER_MODEL = "Salesforce/codet5-base"
 NL_ENCODER_BASE_MODEL = "roberta-base"
 NL_DECODER_BASE_MODEL = "gpt2"
+
+PL_ENCODER_BASE_MODEL = ""
 VOCAB_SIZE = 32100
 
 MAX_SEQUENCE_LENGTH = 128

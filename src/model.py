@@ -1,3 +1,5 @@
+from json import encoder
+from re import A
 from typing import Optional
 import torch 
 import torch.nn as nn 
@@ -9,6 +11,7 @@ from pytorch_lightning.utilities.types import STEP_OUTPUT
 from torchmetrics.functional import accuracy
 
 from transformers import (
+    AutoConfig,
     AutoModel,
     GPT2Config,
     RobertaConfig,
@@ -19,8 +22,11 @@ from config import (
     LEARNING_RATE,
     NL_DECODER_BASE_MODEL,
     NL_ENCODER_BASE_MODEL,
+    PATH_BASE_MODELS,
     PATH_SAVE_NL_DECODER,
-    PATH_SAVE_NL_ENCODER, 
+    PATH_SAVE_NL_ENCODER,
+    PATH_SAVE_NL_LM,
+    PL_ENCODER_BASE_MODEL, 
     VOCAB_SIZE,
     WEIGHT_DECAY
 )
@@ -47,6 +53,10 @@ class LMHead(nn.Module):
         # project back to size of vocab with bias 
         x = self.decoder(x)
         return x 
+
+    def save(self, path: str = PATH_SAVE_NL_LM):
+        torch.save(self.state_dict(), path)
+        return path 
 
 
 class NLEncoder(nn.Module):
@@ -95,16 +105,24 @@ class NLDecoder(nn.Module):
         self,
         model_name_or_path: str = NL_DECODER_BASE_MODEL,
         vocab_size: int = VOCAB_SIZE,
+        usePretrained: bool = False,
     ) -> None:
 
         super().__init__()
 
-        if model_name_or_path.lower() == "gpt2":
-            self.config = GPT2Config()
-            self.config.add_cross_attention = True           # Setting this as decoder
-            self.config.vocab_size = vocab_size              # Making vocab size to that of CodeT5 since we are using CodeT5 tokenizer
+        if usePretrained:
+            self.model = AutoModel.from_pretrained(
+                pretrained_model_name_or_path=model_name_or_path
+            )
 
-        self.model = AutoModel.from_config(self.config)
+        else:
+            if model_name_or_path.lower() == "gpt2":
+                self.config = GPT2Config()
+                self.config.add_cross_attention = True           # Setting this as decoder
+                self.config.vocab_size = vocab_size              # Making vocab size to that of CodeT5 since we are using CodeT5 tokenizer
+
+            self.model = AutoModel.from_config(self.config)
+
     
     def forward(self, input_ids, attention_mask, encoder_hidden_states, encoder_attention_mask): 
         return self.model(
@@ -208,6 +226,7 @@ class NL2NL(pl.LightningModule):
 
         self.log('loss/val', loss)
         self.log('acc/val', acc)
+
     
     def test_step(self, batch, batch_idx) -> Optional[STEP_OUTPUT]:
         outs = self(
@@ -230,6 +249,7 @@ class NL2NL(pl.LightningModule):
         self.log('loss/test', loss)
         self.log('acc/test', acc) 
 
+
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
             params=self.parameters(), 
@@ -239,8 +259,119 @@ class NL2NL(pl.LightningModule):
 
         return optimizer 
 
-    def save(self, encoder_path: str = PATH_SAVE_NL_ENCODER, decoder_path: str = PATH_SAVE_NL_DECODER):
+    def save(self, encoder_path: str = PATH_SAVE_NL_ENCODER, decoder_path: str = PATH_SAVE_NL_DECODER, lm_path: str = PATH_SAVE_NL_LM):
         self.encoder.save(encoder_path)
         self.decoder.save(decoder_path)
+        self.lm_head.save(lm_path)
 
-        return encoder_path, decoder_path
+        return encoder_path, decoder_path, lm_path
+
+
+class PLEncoder(nn.Module):
+    def __init__(
+        self, 
+        model_name_or_path: str = PL_ENCODER_BASE_MODEL,
+        vocab_size: int = VOCAB_SIZE,
+        path_base_models: str = PATH_BASE_MODELS,
+    ) -> None:
+        super().__init__()
+
+        if model_name_or_path.lower() == "codebert":
+            self.config = AutoConfig.from_pretrained(
+                pretrained_model_name_or_path=model_name_or_path,
+                cache_dir=path_base_models
+            ) 
+            self.config.vocab_size = vocab_size
+
+        self.model = AutoModel.from_config(self.config)
+
+    def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor):
+        return self.model(
+            input_ids=input_ids, 
+            attention_mask=attention_mask,
+            output_hidden_states=True
+        )
+
+
+class Generator(nn.Module):
+    def __init__(
+        self,
+        encoder_model_name_or_path: str = PL_ENCODER_BASE_MODEL,
+        decoder_model_name_or_path: str = NL_DECODER_BASE_MODEL,
+        vocab_size: int = VOCAB_SIZE,
+        path_base_models: str = PATH_BASE_MODELS,
+    ) -> None:
+        super().__init__()
+
+        self.encoder = PLEncoder(
+            model_name_or_path=encoder_model_name_or_path,
+            vocab_size=vocab_size,
+            path_base_models=path_base_models,
+        )
+
+        self.decoder = NLDecoder(
+            model_name_or_path=decoder_model_name_or_path,
+            vocab_size=vocab_size,
+        )
+    
+        self.lm_head = LMHead(self.decoder.config)
+
+    def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor):
+        encoder_outs = self.encoder(
+            input_ids=input_ids,
+            attention_mask=attention_mask
+        ) 
+        encoder_hidden_states = encoder_outs.last_hidden_states 
+
+        decoder_outs = self.decoder(
+            encoder_hidden_states=encoder_hidden_states,
+            encoder_attention_mask=attention_mask,
+        )
+
+        lm_outs = self.lm_head(decoder_outs.last_hidden_states)
+        return lm_outs 
+
+class Descriminator(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+
+
+class PL2NL(pl.LightningModule):
+    def __init__(
+        self,
+        encoder_model_name_or_path: str = PL_ENCODER_BASE_MODEL,
+        decoder_model_name_or_path: str = NL_DECODER_BASE_MODEL,
+        g_learning_rate: float = LEARNING_RATE,
+        d_learning_rate: float = LEARNING_RATE,
+        g_weight_decay: float = WEIGHT_DECAY,
+        d_weight_decay: float = WEIGHT_DECAY,
+        vocab_size: int = VOCAB_SIZE,
+        path_base_models: str = PATH_BASE_MODELS,
+    ) -> None:
+        super().__init__()
+        self.save_hyperparameters()
+
+        self.generator = Generator(
+            encoder_model_name_or_path=encoder_model_name_or_path,
+            decoder_model_name_or_path=decoder_model_name_or_path,
+            vocab_size=vocab_size,
+            path_base_models=path_base_models,
+        )
+    
+    def forward(self, input_ids, attention_mask):
+        gen_outs = self.generator(
+            input_ids=input_ids,
+            attention_mask=attention_mask
+        )
+
+        return gen_outs 
+
+    def training_step(self, *args, **kwargs) -> STEP_OUTPUT:
+        return super().training_step(*args, **kwargs)
+    
+    def validation_step(self, *args, **kwargs) -> Optional[STEP_OUTPUT]:
+        return super().validation_step(*args, **kwargs)
+    
+    def configure_optimizers(self):
+        return super().configure_optimizers()
+    

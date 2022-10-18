@@ -62,4 +62,5 @@ def train_nl2nl(args):
     model.save(
         encoder_path=args.path_save_nl_encoder,
         decoder_path=args.path_save_nl_decoder,
+        lm_path=args.path_save_nl_lm
     )
