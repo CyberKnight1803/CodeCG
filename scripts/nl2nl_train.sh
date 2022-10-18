@@ -26,13 +26,14 @@ source ~/CodeCG/codecg/bin/activate
 cd ~/CodeCG/code
 
 srun ~/CodeCG/codecg/bin/python main.py \
---run_name nl2nl-run-2 \
+--run_name nl2nl-run-3 \
 --jobid $SLURM_JOB_ID \
 --logger wandb \
 --path_logs "/scratch/bhanu/CodeCG/logs" \
 --path_base_models "/scratch/bhanu/CodeCG/base_models" \
 --path_cache_datasets "/scratch/bhanu/CodeCG/dataset" \
---workers 8 \
+--workers 4 \
 --path_save_nl_encoder "/scratch/bhanu/CodeCG/saved_models/nl-encoder" \
---path_save_nl_decoder "/scratch/bhanu/CodeCG/saved-models/nl-decoder" \
+--path_save_nl_decoder "/scratch/bhanu/CodeCG/saved_models/nl-decoder" \
+--path_save_nl_lm "/scratch/bhanu/CodeCG/saved_models/nl-lm" \
 --epochs 5 \
