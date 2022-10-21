@@ -1,4 +1,4 @@
-# Contribution to ParaPhraseGen
+# Contribution to CodeCG
 
 It is essential that you know how to use Git as well as GitHub. While the maintainers will be more than happy helping you make your first PR, prerequisite know-how makes it easier for everyone involved. Check [this](https://github.com/firstcontributions/first-contributions) guide if you've never contributed to a project on GitHub before.
 
